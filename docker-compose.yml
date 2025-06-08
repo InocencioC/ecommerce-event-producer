@@ -1,0 +1,100 @@
+version: '3.8'
+
+services:
+  # Serviço MongoDB
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin_user # Seu usuário admin do MongoDB
+      MONGO_INITDB_ROOT_PASSWORD: admin_password # Sua senha admin do MongoDB
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - app-network
+
+  # Serviço Mongo Express (UI para MongoDB)
+  mongo-express:
+    image: mongo-express:latest
+    container_name: mongo-express
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_SERVER: mongodb
+      ME_CONFIG_MONGODB_PORT: 27017
+      ME_CONFIG_MONGODB_ENABLE_ADMIN: 'true'
+      ME_CONFIG_MONGODB_ADMINUSERNAME: admin_user # Deve ser o mesmo que MONGO_INITDB_ROOT_USERNAME
+      ME_CONFIG_MONGODB_ADMINPASSWORD: admin_password # Deve ser o mesmo que MONGO_INITDB_ROOT_PASSWORD
+      ME_CONFIG_BASICAUTH_USERNAME: express_user # Usuário para acessar o Mongo Express
+      ME_CONFIG_BASICAUTH_PASSWORD: express_password # Senha para acessar o Mongo Express
+    depends_on:
+      - mongodb
+    networks:
+      - app-network
+
+  # Serviço ZooKeeper (necessário para Kafka antes do modo Kraft)
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0 # Uma imagem confiável do ZooKeeper
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - app-network
+
+  # Serviço Kafka
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0 # Uma imagem confiável do Kafka
+    container_name: kafka
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181 # Conecta ao serviço Zookeeper
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    depends_on:
+      - zookeeper # Kafka depende do Zookeeper
+    networks:
+      - app-network
+
+  # Serviço AKHQ (UI para Kafka)
+  akhq:
+    image: tchiotludo/akhq:dev # Imagem mais recente do AKHQ
+    container_name: akhq
+    ports:
+      - "8080:8080"
+    environment:
+      # Configurações do AKHQ (YAML format dentro da variável de ambiente)
+      AKHQ_CONFIGURATION: |
+        akhq:
+          connections:
+            docker-kafka:
+              properties:
+                bootstrap.servers: kafka:29092 # Conecta ao serviço Kafka
+              schema-registry:
+                url: http://schema-registry:8081 # Se você adicionar um Schema Registry depois
+              connect:
+                - name: docker-connect
+                  url: http://kafka-connect:8083 # Se você adicionar um Kafka Connect depois
+    depends_on:
+      - kafka # AKHQ depende do Kafka
+    networks:
+      - app-network
+
+# Volumes para persistência de dados
+volumes:
+  mongodb_data:
+  zookeeper_data: # Adicionado volume para Zookeeper
+  kafka_data:     # Adicionado volume para Kafka
+
+# Rede única para todos os serviços se comunicarem
+networks:
+  app-network:
+    driver: bridge
