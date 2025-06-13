@@ -9,5 +9,4 @@ public class EcommerceEventProducerApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(EcommerceEventProducerApplication.class, args);
 	}
-
 }
