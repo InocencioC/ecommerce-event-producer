@@ -3,12 +3,14 @@ package com.ecommerce.ecommerce_event_producer.producer.application.service;
 import java.time.Instant;
 import java.util.UUID;
 
+import org.springframework.stereotype.Service;
+
 import com.ecommerce.ecommerce_event_producer.producer.domain.model.Product;
 import com.ecommerce.ecommerce_event_producer.producer.domain.model.PurchaseEvent;
 import com.ecommerce.ecommerce_event_producer.producer.domain.port.out.EventProducerPort;
 import com.ecommerce.ecommerce_event_producer.producer.domain.port.out.ProductPort;
 import com.ecommerce.ecommerce_event_producer.producer.domain.service.PurchaseService;
-
+@Service
 public class PurchaseServiceImpl implements PurchaseService{
 
     private final ProductPort productPort;
