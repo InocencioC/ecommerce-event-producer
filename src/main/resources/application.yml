@@ -3,7 +3,7 @@ spring:
         name: ecommerce-event-producer
     kafka:
      producer:
-        bootstrap-servers: kafka:9092
+        bootstrap-servers: localhost:9092
         key-serializer: org.apache.kafka.common.serialization.StringSerializer
         value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
     data:
@@ -11,4 +11,8 @@ spring:
             host: localhost
             port: 27017
             database: productdb
-    
+            username: admin_user
+            password: admin_password
+            authentication-database: admin
+server:
+  port: 2025
